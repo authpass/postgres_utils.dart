@@ -3,6 +3,6 @@
 /// More dartdocs go here.
 library postgres_utils;
 
-export 'src/postgres_utils_base.dart';
-
-// TODO: Export any libraries intended for clients of this package.
+export 'src/config.dart';
+export 'src/database_access.dart';
+export 'src/tables/base_tables.dart';
