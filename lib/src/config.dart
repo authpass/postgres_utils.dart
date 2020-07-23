@@ -22,8 +22,8 @@ class DatabaseConfig {
   factory DatabaseConfig.fromJson(Map<String, dynamic> json) =>
       _$DatabaseConfigFromJson(json);
 
-  factory DatabaseConfig.defaults() =>
-      DatabaseConfig.fromJson(_jsonFromEnvironment());
+  factory DatabaseConfig.fromEnvironment({DatabaseConfig defaults}) =>
+      DatabaseConfig.fromJson(_jsonFromEnvironment(defaults));
   Map<String, dynamic> toJson() => _$DatabaseConfigToJson(this);
 
   @JsonKey(defaultValue: 'localhost')
@@ -47,10 +47,14 @@ class DatabaseConfig {
       );
 }
 
-Map<String, dynamic> _jsonFromEnvironment() {
+Map<String, dynamic> _jsonFromEnvironment(DatabaseConfig defaults) {
+  final defaultJson = defaults?.toJson() ?? <String, dynamic>{};
   final dbConfig = Platform.environment['DBCONFIG'];
   if (dbConfig != null) {
-    return json.decode(dbConfig) as Map<String, dynamic>;
+    return <String, dynamic>{
+      ...defaultJson,
+      ...(json.decode(dbConfig) as Map<String, dynamic>),
+    };
   }
-  return <String, dynamic>{};
+  return defaultJson;
 }

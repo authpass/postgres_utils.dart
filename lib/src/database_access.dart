@@ -307,7 +307,7 @@ class Migrations<TX extends DatabaseTransactionBase<TABLES>,
 
   final int id;
   final String versionCode;
-  final Future<void> Function(TX conn) up;
+  final Future<void> Function(TX tx) up;
 }
 
 class SimpleWhere {
