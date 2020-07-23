@@ -10,7 +10,7 @@ import 'package:quiver/core.dart';
 
 final _logger = Logger('database_access');
 
-class DatabaseTransactionBase<TABLES extends Tables> {
+class DatabaseTransactionBase<TABLES extends TablesBase> {
   DatabaseTransactionBase(this._conn, this.tables);
 
   final PostgreSQLExecutionContext _conn;
@@ -128,7 +128,7 @@ class DatabaseTransactionBase<TABLES extends Tables> {
 }
 
 abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
-    TABLES extends Tables> {
+    TABLES extends TablesBase> {
   DatabaseAccessBase({
     @required this.config,
     @required this.tables,
@@ -279,7 +279,7 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
 //  }
 //}
 
-abstract class Tables {
+abstract class TablesBase {
   final migration = MigrationTable();
 
   @protected
@@ -292,12 +292,12 @@ abstract class Tables {
 }
 
 abstract class MigrationsProvider<TX extends DatabaseTransactionBase<TABLES>,
-    TABLES extends Tables> {
+    TABLES extends TablesBase> {
   List<Migrations<TX, TABLES>> get migrations;
 }
 
 class Migrations<TX extends DatabaseTransactionBase<TABLES>,
-    TABLES extends Tables> {
+    TABLES extends TablesBase> {
   Migrations({
     @required this.id,
     this.versionCode = 'a',
