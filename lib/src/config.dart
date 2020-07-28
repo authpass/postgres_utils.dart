@@ -24,6 +24,9 @@ class DatabaseConfig {
 
   factory DatabaseConfig.fromEnvironment({DatabaseConfig defaults}) =>
       DatabaseConfig.fromJson(_jsonFromEnvironment(defaults));
+
+  static final defaults = DatabaseConfig.fromJson(<String, dynamic>{});
+
   Map<String, dynamic> toJson() => _$DatabaseConfigToJson(this);
 
   @JsonKey(defaultValue: 'localhost')
@@ -38,9 +41,14 @@ class DatabaseConfig {
   @JsonKey(defaultValue: 'blubb')
   final String password;
 
-  DatabaseConfig copyWith({String databaseName}) => DatabaseConfig(
-        host: host,
-        port: port,
+  DatabaseConfig copyWith({
+    String host,
+    int port,
+    String databaseName,
+  }) =>
+      DatabaseConfig(
+        host: host ?? this.host,
+        port: port ?? this.port,
         databaseName: databaseName ?? this.databaseName,
         username: username,
         password: password,
