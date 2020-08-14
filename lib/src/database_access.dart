@@ -32,9 +32,19 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
     _assertColumnNames(values);
     final entries = values.entries.toList();
     final columnList = entries.map((e) => e.key).join(',');
-    final bindList = entries.map((e) => '@${e.key}').join(',');
+    final bindList = entries.map((e) => _bindForEntry(e)).join(',');
     return await execute('INSERT INTO $table ($columnList) VALUES ($bindList)',
-        values: values, expectedResultCount: 1);
+        values: values.map((key, value) =>
+            MapEntry(key, value is CustomBind ? value.value : value)),
+        expectedResultCount: 1);
+  }
+
+  String _bindForEntry(MapEntry<String, Object> entry) {
+    final value = entry.value;
+    if (value is CustomBind) {
+      return value.bind;
+    }
+    return '@${entry.key}';
   }
 
   Future<int> executeUpdate(
@@ -125,6 +135,12 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
         allowReuse: allowReuse,
         timeoutInSeconds: timeoutInSeconds);
   }
+}
+
+class CustomBind {
+  CustomBind(this.bind, this.value);
+  final String bind;
+  final Object value;
 }
 
 abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
