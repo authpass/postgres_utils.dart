@@ -24,6 +24,7 @@ abstract class TableConstants {
 extension FuturePostgreSQL on Future<PostgreSQLResult> {
   Future<T> singleOrNull<T>(FutureOr<T> Function(PostgreSQLResultRow row) cb) =>
       then((value) => value.singleOrNull(cb));
+  Future<PostgreSQLResultRow> get single => then((value) => value.single);
 }
 
 extension PostgreSQLResultExt on PostgreSQLResult {
