@@ -81,7 +81,7 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
   Map<String, Object> flattenOptionals(Map<String, Object> values) {
     Object unwrap(Object value) => value is Optional ? value.orNull : value;
     return Map.fromEntries(values.entries
-        .where((element) => element != null)
+        .where((element) => element.value != null)
         .map((e) => MapEntry(e.key, unwrap(e.value))));
   }
 
