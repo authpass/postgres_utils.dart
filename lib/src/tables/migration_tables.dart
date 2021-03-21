@@ -35,7 +35,7 @@ class MigrationTable extends TableBase with TableConstants {
   Future<int> queryLastVersion(DatabaseTransactionBase connection) async {
     final result = await connection
         .query('SELECT MAX($_TABLE_MIGRATE_VERSION) FROM $_TABLE_MIGRATE');
-    final maxVersion = result.first[0] as int;
+    final maxVersion = result.first[0] as int?;
     _logger.finer('Migration version: $maxVersion');
     return maxVersion ?? 0;
   }
@@ -52,9 +52,9 @@ class MigrationTable extends TableBase with TableConstants {
 
 class MigrationEntity {
   MigrationEntity({
-    @required this.version,
-    @required this.versionCode,
-    @required this.appliedAt,
+    required this.version,
+    required this.versionCode,
+    required this.appliedAt,
   });
   final int version;
   final String versionCode;

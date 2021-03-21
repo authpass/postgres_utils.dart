@@ -17,7 +17,7 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
   final TABLES tables;
   static final columnNamePattern = RegExp(r'^[a-z_]+$');
 
-  void _assertColumnNames(Map<String, Object> values) {
+  void _assertColumnNames(Map<String, Object?> values) {
     assert((() {
       for (final key in values.keys) {
         if (!columnNamePattern.hasMatch(key)) {
@@ -49,8 +49,8 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
 
   Future<int> executeUpdate(
     String table, {
-    @required Map<String, Object> set,
-    @required Map<String, Object> where,
+    required Map<String, Object?> set,
+    required Map<String, Object> where,
     bool setContainsOptional = false,
   }) async {
     assert(set != null);
@@ -78,14 +78,14 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
 
   /// Removes entries in [values] which have a `null` value, and replaces
   /// all [Optional] values with their actual value.
-  Map<String, Object> flattenOptionals(Map<String, Object> values) {
-    Object unwrap(Object value) => value is Optional ? value.orNull : value;
+  Map<String, Object?> flattenOptionals(Map<String, Object?> values) {
+    Object? unwrap(Object? value) => value is Optional ? value.orNull : value;
     return Map.fromEntries(values.entries
         .where((element) => element.value != null)
         .map((e) => MapEntry(e.key, unwrap(e.value))));
   }
 
-  bool _assertCorrectValues(Map<String, Object> values) {
+  bool _assertCorrectValues(Map<String, Object?>? values) {
     if (values == null) {
       return true;
     }
@@ -103,9 +103,9 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
 
   Future<int> execute(
     String fmtString, {
-    Map<String, Object> values,
-    int timeoutInSeconds,
-    int expectedResultCount,
+    Map<String, Object?>? values,
+    int? timeoutInSeconds,
+    int? expectedResultCount,
   }) async {
     try {
       assert(_assertCorrectValues(values));
@@ -126,9 +126,9 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
   }
 
   Future<PostgreSQLResult> query(String fmtString,
-      {Map<String, Object> values,
-      bool allowReuse,
-      int timeoutInSeconds}) async {
+      {Map<String, Object>? values,
+      bool? allowReuse,
+      int? timeoutInSeconds}) async {
     assert(_assertCorrectValues(values));
     return _conn.query(fmtString,
         substitutionValues: values,
@@ -146,9 +146,9 @@ class CustomBind {
 abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
     TABLES extends TablesBase> {
   DatabaseAccessBase({
-    @required this.config,
-    @required this.tables,
-    @required this.migrations,
+    required this.config,
+    required this.tables,
+    required this.migrations,
   })  : assert(config != null),
         assert(tables != null),
         assert(migrations != null);
@@ -157,11 +157,11 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
   final DatabaseConfig config;
   final MigrationsProvider<TX, TABLES> migrations;
 
-  PostgreSQLConnection _conn;
+  PostgreSQLConnection? _conn;
 
   Future<PostgreSQLConnection> _connection() async {
     if (_conn != null) {
-      return _conn;
+      return _conn!;
     }
     final conn = PostgreSQLConnection(
       config.host,
@@ -185,7 +185,7 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
   }
 
   Future<void> dispose() async {
-    await _conn.close();
+    await _conn!.close();
     _conn = null;
   }
 
@@ -229,7 +229,7 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
 
     final migrationRun = clock.now().toUtc();
     await run((conn) async {
-      final migrations = this.migrations.migrations;
+      final List<Migrations<TX, TABLES>> migrations = this.migrations.migrations;
       for (final migration in migrations) {
         if (migration.id > lastMigration) {
           _logger.fine('Running migration ${migration.id} '
@@ -315,9 +315,9 @@ abstract class MigrationsProvider<TX extends DatabaseTransactionBase<TABLES>,
 class Migrations<TX extends DatabaseTransactionBase<TABLES>,
     TABLES extends TablesBase> {
   Migrations({
-    @required this.id,
+    required this.id,
     this.versionCode = 'a',
-    @required this.up,
+    required this.up,
   })  : assert(id != null),
         assert(up != null);
 

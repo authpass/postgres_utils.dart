@@ -9,14 +9,15 @@ part of 'config.dart';
 DatabaseConfig _$DatabaseConfigFromJson(Map json) {
   return $checkedNew('DatabaseConfig', json, () {
     final val = DatabaseConfig(
-      host: $checkedConvert(json, 'host', (v) => v as String) ?? 'localhost',
-      port: $checkedConvert(json, 'port', (v) => v as int) ?? 5432,
-      databaseName: $checkedConvert(json, 'databaseName', (v) => v as String) ??
-          'authpass',
+      host: $checkedConvert(json, 'host', (v) => v as String?) ?? 'localhost',
+      port: $checkedConvert(json, 'port', (v) => v as int?) ?? 5432,
+      databaseName:
+          $checkedConvert(json, 'databaseName', (v) => v as String?) ??
+              'authpass',
       username:
-          $checkedConvert(json, 'username', (v) => v as String) ?? 'authpass',
+          $checkedConvert(json, 'username', (v) => v as String?) ?? 'authpass',
       password:
-          $checkedConvert(json, 'password', (v) => v as String) ?? 'blubb',
+          $checkedConvert(json, 'password', (v) => v as String?) ?? 'blubb',
     );
     return val;
   });

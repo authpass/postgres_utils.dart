@@ -9,10 +9,10 @@ part 'config.g.dart';
 @JsonSerializable(anyMap: true, checked: true)
 class DatabaseConfig {
   DatabaseConfig({
-    @required this.host,
-    @required this.port,
-    @required this.databaseName,
-    @required this.username,
+    required this.host,
+    required this.port,
+    required this.databaseName,
+    required this.username,
     this.password,
   })  : assert(host != null),
         assert(port != null),
@@ -22,7 +22,7 @@ class DatabaseConfig {
   factory DatabaseConfig.fromJson(Map<String, dynamic> json) =>
       _$DatabaseConfigFromJson(json);
 
-  factory DatabaseConfig.fromEnvironment({DatabaseConfig defaults}) =>
+  factory DatabaseConfig.fromEnvironment({DatabaseConfig? defaults}) =>
       DatabaseConfig.fromJson(_jsonFromEnvironment(defaults));
 
   static final defaults = DatabaseConfig.fromJson(<String, dynamic>{});
@@ -39,12 +39,12 @@ class DatabaseConfig {
   @JsonKey(defaultValue: 'authpass')
   final String username;
   @JsonKey(defaultValue: 'blubb')
-  final String password;
+  final String? password;
 
   DatabaseConfig copyWith({
-    String host,
-    int port,
-    String databaseName,
+    String? host,
+    int? port,
+    String? databaseName,
   }) =>
       DatabaseConfig(
         host: host ?? this.host,
@@ -55,7 +55,7 @@ class DatabaseConfig {
       );
 }
 
-Map<String, dynamic> _jsonFromEnvironment(DatabaseConfig defaults) {
+Map<String, dynamic> _jsonFromEnvironment(DatabaseConfig? defaults) {
   final defaultJson = defaults?.toJson() ?? <String, dynamic>{};
   final dbConfig = Platform.environment['DBCONFIG'];
   if (dbConfig != null) {
