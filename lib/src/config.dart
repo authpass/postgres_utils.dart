@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:json_annotation/json_annotation.dart';
-import 'package:meta/meta.dart';
 
 part 'config.g.dart';
 
@@ -14,10 +13,7 @@ class DatabaseConfig {
     required this.databaseName,
     required this.username,
     this.password,
-  })  : assert(host != null),
-        assert(port != null),
-        assert(databaseName != null),
-        assert(username != null);
+  });
 
   factory DatabaseConfig.fromJson(Map<String, dynamic> json) =>
       _$DatabaseConfigFromJson(json);

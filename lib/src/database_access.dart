@@ -53,8 +53,6 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
     required Map<String, Object> where,
     bool setContainsOptional = false,
   }) async {
-    assert(set != null);
-    assert(where != null);
     _assertColumnNames(set);
     _assertColumnNames(where);
     assert(!where.keys.any((key) => set.containsKey(key)));
@@ -149,9 +147,7 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
     required this.config,
     required this.tables,
     required this.migrations,
-  })  : assert(config != null),
-        assert(tables != null),
-        assert(migrations != null);
+  });
 
   final TABLES tables;
   final DatabaseConfig config;
@@ -229,7 +225,7 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
 
     final migrationRun = clock.now().toUtc();
     await run((conn) async {
-      final List<Migrations<TX, TABLES>> migrations = this.migrations.migrations;
+      final migrations = this.migrations.migrations;
       for (final migration in migrations) {
         if (migration.id > lastMigration) {
           _logger.fine('Running migration ${migration.id} '
@@ -318,8 +314,7 @@ class Migrations<TX extends DatabaseTransactionBase<TABLES>,
     required this.id,
     this.versionCode = 'a',
     required this.up,
-  })  : assert(id != null),
-        assert(up != null);
+  });
 
   final int id;
   final String versionCode;
@@ -336,7 +331,7 @@ class SimpleWhere {
     checkState(conditions.isNotEmpty);
   }
 
-  final Map<String, Object> conditions;
+  final Map<String, Object?> conditions;
 
   String sql() =>
       conditions.entries.map((e) => '${e.key} = @${e.key}').join(' AND ');

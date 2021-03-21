@@ -1,5 +1,4 @@
 import 'package:logging/logging.dart';
-import 'package:meta/meta.dart';
 import 'package:postgres_utils/src/database_access.dart';
 import 'package:postgres_utils/src/tables/base_tables.dart';
 
