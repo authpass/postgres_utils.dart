@@ -124,7 +124,7 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
   }
 
   Future<PostgreSQLResult> query(String fmtString,
-      {Map<String, Object>? values,
+      {Map<String, Object?>? values,
       bool allowReuse = true,
       int? timeoutInSeconds}) async {
     assert(_assertCorrectValues(values));
