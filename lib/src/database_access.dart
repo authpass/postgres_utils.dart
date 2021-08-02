@@ -28,7 +28,7 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
     })());
   }
 
-  Future<int> executeInsert(String table, Map<String, Object> values) async {
+  Future<int> executeInsert(String table, Map<String, Object?> values) async {
     _assertColumnNames(values);
     final entries = values.entries.toList();
     final columnList = entries.map((e) => e.key).join(',');
@@ -39,7 +39,7 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
         expectedResultCount: 1);
   }
 
-  String _bindForEntry(MapEntry<String, Object> entry) {
+  String _bindForEntry(MapEntry<String, Object?> entry) {
     final value = entry.value;
     if (value is CustomBind) {
       return value.bind;
