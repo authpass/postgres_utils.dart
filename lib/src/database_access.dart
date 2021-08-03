@@ -55,21 +55,21 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
   }) async {
     _assertColumnNames(set);
     _assertColumnNames(where);
-    assert(!where.keys.any((key) => set.containsKey(key)));
+    // assert(!where.keys.any((key) => set.containsKey(key)));
     assert(!where.values.contains(null), 'where values must not be null.');
     assert(!setContainsOptional || set.values.whereType<Optional>().isEmpty);
     if (setContainsOptional) {
       set = flattenOptionals(set);
     }
     final setStatement =
-        set.entries.map((e) => '${e.key} = @${e.key}').join(',');
+        set.entries.map((e) => '${e.key} = @s${e.key}').join(',');
     final whereStatement =
-        where.entries.map((e) => '${e.key} = @${e.key}').join(' AND ');
+        where.entries.map((e) => '${e.key} = @w${e.key}').join(' AND ');
     return await execute(
         'UPDATE $table SET $setStatement WHERE $whereStatement',
         values: {
-          ...set,
-          ...where,
+          ...set.map((key, value) => MapEntry('s$key', value)),
+          ...where.map((key, value) => MapEntry('w$key', value)),
         },
         expectedResultCount: 1);
   }
