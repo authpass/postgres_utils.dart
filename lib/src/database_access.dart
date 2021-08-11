@@ -10,6 +10,9 @@ import 'package:quiver/core.dart';
 
 final _logger = Logger('database_access');
 
+const whereIsNull = Object();
+const whereIsNotNull = Object();
+
 class DatabaseTransactionBase<TABLES extends TablesBase> {
   DatabaseTransactionBase(this._conn, this.tables);
 
@@ -49,26 +52,35 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
 
   Future<int> executeUpdate(
     String table, {
-    required Map<String, Object?> set,
-    required Map<String, Object> where,
+    required final Map<String, Object?> set,
+    required final Map<String, Object> where,
     bool setContainsOptional = false,
   }) async {
     _assertColumnNames(set);
     _assertColumnNames(where);
     // assert(!where.keys.any((key) => set.containsKey(key)));
-    assert(!where.values.contains(null), 'where values must not be null.');
-    assert(!setContainsOptional || set.values.whereType<Optional>().isEmpty);
-    if (setContainsOptional) {
-      set = flattenOptionals(set);
+    if (where.values.contains(null)) {
+      throw ArgumentError('where values must not be null.');
     }
+    assert(!setContainsOptional || set.values.whereType<Optional>().isEmpty);
+    final setArgs = setContainsOptional ? flattenOptionals(set) : set;
     final setStatement =
-        set.entries.map((e) => '${e.key} = @s${e.key}').join(',');
-    final whereStatement =
-        where.entries.map((e) => '${e.key} = @w${e.key}').join(' AND ');
+        setArgs.entries.map((e) => '${e.key} = @s${e.key}').join(',');
+    final whereStatement = where.entries.map((e) {
+      if (identical(e.value, whereIsNull)) {
+        where.remove(e.key);
+        return '${e.key} IS NULL';
+      }
+      if (identical(e.value, whereIsNotNull)) {
+        where.remove(e.key);
+        return '${e.key} IS NOT NULL';
+      }
+      return '${e.key} = @w${e.key}';
+    }).join(' AND ');
     return await execute(
         'UPDATE $table SET $setStatement WHERE $whereStatement',
         values: {
-          ...set.map((key, value) => MapEntry('s$key', value)),
+          ...setArgs.map((key, value) => MapEntry('s$key', value)),
           ...where.map((key, value) => MapEntry('w$key', value)),
         },
         expectedResultCount: 1);
