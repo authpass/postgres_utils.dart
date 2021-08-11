@@ -66,7 +66,7 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
     final setArgs = setContainsOptional ? flattenOptionals(set) : set;
     final setStatement =
         setArgs.entries.map((e) => '${e.key} = @s${e.key}').join(',');
-    final whereStatement = where.entries.map((e) {
+    final whereStatement = where.entries.toList(growable: false).map((e) {
       if (identical(e.value, whereIsNull)) {
         where.remove(e.key);
         return '${e.key} IS NULL';
@@ -140,10 +140,17 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
       bool allowReuse = true,
       int? timeoutInSeconds}) async {
     assert(_assertCorrectValues(values));
-    return _conn.query(fmtString,
-        substitutionValues: values,
-        allowReuse: allowReuse,
-        timeoutInSeconds: timeoutInSeconds);
+    try {
+      // _logger.finest('QUERY: $fmtString');
+      return _conn.query(fmtString,
+          substitutionValues: values,
+          allowReuse: allowReuse,
+          timeoutInSeconds: timeoutInSeconds);
+    } catch (e, stackTrace) {
+      _logger.warning(
+          'Error while running statement $fmtString', e, stackTrace);
+      rethrow;
+    }
   }
 }
 
