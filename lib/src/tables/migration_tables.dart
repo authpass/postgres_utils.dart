@@ -44,7 +44,7 @@ class MigrationTable extends TableBase with TableConstants {
     await db.executeInsert(_TABLE_MIGRATE, {
       _TABLE_MIGRATE_APPLIED_AT: appliedAt,
       _TABLE_MIGRATE_VERSION: version,
-      _TABLE_MIGRATE_VERSION_CODE: versionCode
+      _TABLE_MIGRATE_VERSION_CODE: versionCode,
     });
   }
 }
