@@ -36,16 +36,19 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
     final entries = values.entries.toList();
     final columnList = entries.map((e) => e.key).join(',');
     final bindList = entries.map((e) => _bindForEntry(e)).join(',');
-    return await execute('INSERT INTO $table ($columnList) VALUES ($bindList)',
-        values: values.map((key, value) =>
-            MapEntry(key, value is CustomBind ? value.value : value)),
-        expectedResultCount: 1);
+    return await execute(
+      'INSERT INTO $table ($columnList) VALUES ($bindList)',
+      values: values.map((key, value) =>
+          MapEntry(key, value is CustomBind ? value.value : value)),
+      expectedResultCount: 1,
+      useExtendedQuery: true,
+    );
   }
 
   String _bindForEntry(MapEntry<String, Object?> entry) {
     final value = entry.value;
     if (value is CustomBind) {
-      return value.bind;
+      return value.formatString(entry.key);
     }
     return '@${entry.key}';
   }
@@ -116,12 +119,21 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
     Map<String, Object?>? values,
     int? timeoutInSeconds,
     int? expectedResultCount,
+    bool useExtendedQuery = false,
   }) async {
     try {
       assert(_assertCorrectValues(values));
       _logger.finest('Executing query: $fmtString with values: $values');
-      final result = await _conn.execute(fmtString,
-          substitutionValues: values, timeoutInSeconds: timeoutInSeconds);
+
+      final int result;
+      if (useExtendedQuery) {
+        final sqlResult = await _conn.query(fmtString,
+            substitutionValues: values, timeoutInSeconds: timeoutInSeconds);
+        result = sqlResult.affectedRowCount;
+      } else {
+        result = await _conn.execute(fmtString,
+            substitutionValues: values, timeoutInSeconds: timeoutInSeconds);
+      }
       if (expectedResultCount != null && result != expectedResultCount) {
         throw StateError(
             'Expected result: $expectedResultCount but got $result. '
@@ -155,9 +167,29 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
 }
 
 class CustomBind {
-  CustomBind(this.bind, this.value);
-  final String bind;
+  CustomBind(this._bind, this.value, {this.type});
+  final String _bind;
   final Object value;
+  final PostgreSQLDataType? type;
+
+  String formatString(String bindName) => _bind;
+}
+
+class CustomTypeBind extends CustomBind {
+  factory CustomTypeBind(PostgreSQLDataType type, Object value) {
+    // _bindCount.to
+    return CustomTypeBind._(
+      '',
+      value,
+      type,
+    );
+  }
+  CustomTypeBind._(String bind, Object value, PostgreSQLDataType type)
+      : super(bind, value, type: type);
+
+  @override
+  String formatString(String bindName) =>
+      '${PostgreSQLFormat.id(bindName)}::jsonb';
 }
 
 abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
