@@ -256,8 +256,10 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
   }
 
   @visibleForTesting
-  Future<void> forTestDropDatabase(String databaseName) async {
-    await (await _connection()).execute('DROP DATABASE $databaseName');
+  Future<void> forTestDropDatabase(String databaseName,
+      {bool ifExists = false}) async {
+    await (await _connection()).execute(
+        'DROP DATABASE ${ifExists ? ' IF EXISTS ' : ''} $databaseName');
   }
 
   Future<void> dispose() async {

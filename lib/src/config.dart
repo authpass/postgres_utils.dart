@@ -18,6 +18,8 @@ class DatabaseConfig {
   factory DatabaseConfig.fromJson(Map<String, dynamic> json) =>
       _$DatabaseConfigFromJson(json);
 
+  /// load database configuration from the `DBCONFIG` environment variables.
+  /// this environment variable must be a json.
   factory DatabaseConfig.fromEnvironment({DatabaseConfig? defaults}) =>
       DatabaseConfig.fromJson(_jsonFromEnvironment(defaults));
 

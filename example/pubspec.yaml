@@ -8,5 +8,7 @@ environment:
 
 dependencies:
   postgres: ^2.4.1+2
+  uuid: ^3.0.4
+  logging_appenders: ^1.0.0
   postgres_utils:
     path: ../
