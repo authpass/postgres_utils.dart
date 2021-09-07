@@ -13,6 +13,16 @@ final _logger = Logger('database_access');
 const whereIsNull = Object();
 const whereIsNotNull = Object();
 
+class OnConflictActionDoUpdate extends OnConflictAction {
+  OnConflictActionDoUpdate({required this.indexColumns});
+
+  final List<String> indexColumns;
+}
+
+abstract class OnConflictAction {
+  // doUpdate,
+}
+
 class DatabaseTransactionBase<TABLES extends TablesBase> {
   DatabaseTransactionBase(this._conn, this.tables);
 
@@ -31,13 +41,32 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
     })());
   }
 
-  Future<int> executeInsert(String table, Map<String, Object?> values) async {
+  Future<int> executeInsert(
+    String table,
+    Map<String, Object?> values, {
+    final OnConflictAction? onConflict,
+  }) async {
     _assertColumnNames(values);
     final entries = values.entries.toList();
     final columnList = entries.map((e) => e.key).join(',');
     final bindList = entries.map((e) => _bindForEntry(e)).join(',');
+    final String onConflictSql;
+    if (onConflict is OnConflictActionDoUpdate) {
+      final set = entries
+          .where((element) => !onConflict.indexColumns.contains(element.key))
+          .map((e) => '${e.key} = EXCLUDED.${e.key}')
+          .join(', ');
+      final where = entries
+          .where((element) => onConflict.indexColumns.contains(element.key))
+          .map((e) => '$table.${e.key} = EXCLUDED.${e.key}')
+          .join(' AND ');
+      onConflictSql = ' ON CONFLICT (${onConflict.indexColumns.join(', ')}) '
+          ' DO UPDATE SET $set WHERE $where';
+    } else {
+      onConflictSql = '';
+    }
     return await execute(
-      'INSERT INTO $table ($columnList) VALUES ($bindList)',
+      'INSERT INTO $table ($columnList) VALUES ($bindList) $onConflictSql',
       values: values.map((key, value) =>
           MapEntry(key, value is CustomBind ? value.value : value)),
       expectedResultCount: 1,
