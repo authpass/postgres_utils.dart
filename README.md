@@ -1,22 +1,17 @@
-A library for Dart developers.
+A few utilities to make it easier to work with postgresql database.
 
-Created from templates made available by Stagehand under a BSD-style
-[license](https://github.com/dart-lang/stagehand/blob/master/LICENSE).
+Uses the pub [postgres](https://pub.dev/packages/postgres) package internally
 
 ## Usage
 
-A simple usage example:
+see [example/lib/main.dart](example/lib/main.dart).
 
-```dart
-import 'package:postgres_utils/postgres_utils.dart';
+## Examples
 
-main() {
-  var awesome = new Awesome();
-}
-```
+Check out https://github.com/authpass/authpass-cloud for a project using this package.
 
 ## Features and bugs
 
 Please file feature requests and bugs at the [issue tracker][tracker].
 
-[tracker]: http://example.com/issues/replaceme
+[tracker]: https://github.com/authpass/postgres_utils.dart/issues
