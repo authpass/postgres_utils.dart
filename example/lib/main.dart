@@ -1,10 +1,9 @@
+import 'package:logging/logging.dart';
 import 'package:logging_appenders/logging_appenders.dart';
 import 'package:postgres/postgres.dart';
 import 'package:postgres_utils/postgres_utils.dart';
 import 'package:uuid/uuid.dart';
 import 'package:uuid/uuid_util.dart';
-
-import 'package:logging/logging.dart';
 
 final _logger = Logger('main');
 
