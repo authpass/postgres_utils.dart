@@ -7,7 +7,7 @@ abstract class TableBase {
   List<String> get types => const [];
 }
 
-abstract class TableConstants {
+abstract mixin class TableConstants {
   final columnId = 'id';
   String get specColumnIdPrimaryKey => '$columnId uuid primary key';
 
@@ -23,15 +23,14 @@ abstract class TableConstants {
       'DEFAULT CURRENT_TIMESTAMP';
 }
 
-extension FuturePostgreSQL on Future<PostgreSQLResult> {
-  Future<T?> singleOrNull<T>(
-          FutureOr<T?> Function(PostgreSQLResultRow row) cb) =>
+extension FuturePostgreSQL on Future<Result> {
+  Future<T?> singleOrNull<T>(FutureOr<T?> Function(ResultRow row) cb) =>
       then((value) => value.singleOrNull<FutureOr<T?>>(cb));
-  Future<PostgreSQLResultRow> get single => then((value) => value.single);
+  Future<ResultRow> get single => then((value) => value.single);
 }
 
-extension PostgreSQLResultExt on PostgreSQLResult {
-  T? singleOrNull<T>(T Function(PostgreSQLResultRow row) cb) {
+extension PostgreSQLResultExt on Result {
+  T? singleOrNull<T>(T Function(ResultRow row) cb) {
     if (isEmpty) {
       return null;
     }

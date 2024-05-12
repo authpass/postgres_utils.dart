@@ -2,16 +2,16 @@ import 'package:logging/logging.dart';
 import 'package:logging_appenders/logging_appenders.dart';
 import 'package:postgres/postgres.dart';
 import 'package:postgres_utils/postgres_utils.dart';
+import 'package:uuid/data.dart';
+import 'package:uuid/rng.dart';
 import 'package:uuid/uuid.dart';
-import 'package:uuid/uuid_util.dart';
 
 final _logger = Logger('main');
 
-const Uuid _uuid = Uuid(options: <String, dynamic>{'grng': UuidUtil.cryptoRNG});
+final Uuid _uuid = Uuid(goptions: GlobalOptions(CryptoRNG()));
 
 class DatabaseTransaction extends DatabaseTransactionBase<MyTables> {
-  DatabaseTransaction(PostgreSQLExecutionContext conn, MyTables tables)
-      : super(conn, tables);
+  DatabaseTransaction(TxSession conn, MyTables tables) : super(conn, tables);
 }
 
 class DatabaseAccess extends DatabaseAccessBase<DatabaseTransaction, MyTables> {
@@ -25,7 +25,7 @@ class DatabaseAccess extends DatabaseAccessBase<DatabaseTransaction, MyTables> {
 
   @override
   DatabaseTransaction createDatabaseTransaction(
-      PostgreSQLExecutionContext conn, MyTables tables) {
+      TxSession conn, MyTables tables) {
     return DatabaseTransaction(conn, tables);
   }
 }

@@ -2,6 +2,8 @@ import 'package:clock/clock.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:postgres/postgres.dart';
+// ignore: implementation_imports
+import 'package:postgres/src/types/type_registry.dart' show TypeRegistryExt;
 import 'package:postgres_utils/src/config.dart';
 import 'package:postgres_utils/src/tables/base_tables.dart';
 import 'package:postgres_utils/src/tables/migration_tables.dart';
@@ -26,7 +28,7 @@ abstract class OnConflictAction {
 class DatabaseTransactionBase<TABLES extends TablesBase> {
   DatabaseTransactionBase(this._conn, this.tables);
 
-  final PostgreSQLExecutionContext _conn;
+  final TxSession _conn;
   final TABLES tables;
   static final columnNamePattern = RegExp(r'^[a-z_]+$');
 
@@ -155,14 +157,13 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
       _logger.finest('Executing query: $fmtString with values: $values');
 
       final int result;
-      if (useExtendedQuery) {
-        final sqlResult = await _conn.query(fmtString,
-            substitutionValues: values, timeoutInSeconds: timeoutInSeconds);
-        result = sqlResult.affectedRowCount;
-      } else {
-        result = await _conn.execute(fmtString,
-            substitutionValues: values, timeoutInSeconds: timeoutInSeconds);
-      }
+      final sqlResult = await query(
+        fmtString,
+        values: values,
+        timeoutInSeconds: timeoutInSeconds,
+        queryMode: useExtendedQuery ? QueryMode.extended : null,
+      );
+      result = sqlResult.affectedRows;
       if (expectedResultCount != null && result != expectedResultCount) {
         throw StateError(
             'Expected result: $expectedResultCount but got $result. '
@@ -176,17 +177,22 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
     }
   }
 
-  Future<PostgreSQLResult> query(String fmtString,
-      {Map<String, Object?>? values,
-      bool allowReuse = true,
-      int? timeoutInSeconds}) async {
+  Future<Result> query(
+    String fmtString, {
+    Map<String, Object?>? values,
+    bool allowReuse = true,
+    int? timeoutInSeconds,
+    QueryMode? queryMode,
+  }) async {
     assert(_assertCorrectValues(values));
     try {
       // _logger.finest('QUERY: $fmtString');
-      return _conn.query(fmtString,
-          substitutionValues: values,
-          allowReuse: allowReuse,
-          timeoutInSeconds: timeoutInSeconds);
+      return _conn.execute(Sql.named(fmtString),
+          parameters: values,
+          queryMode: queryMode,
+          timeout: timeoutInSeconds == null
+              ? null
+              : Duration(seconds: timeoutInSeconds));
     } catch (e, stackTrace) {
       _logger.warning(
           'Error while running statement $fmtString', e, stackTrace);
@@ -196,16 +202,16 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
 }
 
 class CustomBind {
-  CustomBind(this._bind, this.value, {this.type});
+  CustomBind(this._bind, this.value, {Type? type}) : _type = type;
   final String _bind;
   final Object value;
-  final PostgreSQLDataType? type;
+  final Type? _type;
 
   String formatString(String bindName) => _bind;
 }
 
 class CustomTypeBind extends CustomBind {
-  factory CustomTypeBind(PostgreSQLDataType type, Object value) {
+  factory CustomTypeBind(Type type, Object value) {
     // _bindCount.to
     return CustomTypeBind._(
       '',
@@ -213,12 +219,13 @@ class CustomTypeBind extends CustomBind {
       type,
     );
   }
-  CustomTypeBind._(String bind, Object value, PostgreSQLDataType type)
+  CustomTypeBind._(String bind, Object value, Type type)
       : super(bind, value, type: type);
 
   @override
-  String formatString(String bindName) =>
-      '${PostgreSQLFormat.id(bindName)}::jsonb';
+  String formatString(String bindName) => _type == null
+      ? '@$bindName'
+      : '@$bindName::${TypeRegistry().lookupTypeName(_type)}';
 }
 
 abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
@@ -233,20 +240,19 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
   final DatabaseConfig config;
   final MigrationsProvider<TX, TABLES> migrations;
 
-  PostgreSQLConnection? _conn;
+  Connection? _conn;
 
-  Future<PostgreSQLConnection> _connection() async {
+  Future<Connection> _connection() async {
     if (_conn != null) {
       return _conn!;
     }
-    final conn = PostgreSQLConnection(
-      config.host,
-      config.port,
-      config.databaseName,
+    final conn = await Connection.open(Endpoint(
+      host: config.host,
+      port: config.port,
+      database: config.databaseName,
       username: config.username,
       password: config.password,
-    );
-    await conn.open();
+    ));
     return _conn = conn;
   }
 
@@ -273,15 +279,17 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
       });
 
   Future<T> _transaction<T>(
-      Future<T> Function(PostgreSQLExecutionContext conn) queryBlock) async {
+      Future<T> Function(TxSession conn) queryBlock) async {
     final conn = await _connection();
-    final dynamic result = await conn.transaction(queryBlock);
-    if (result is T) {
-      return result;
-    }
-    throw Exception(
-        'Error running in transaction, $result (${result.runtimeType})'
-        ' is not ${T.runtimeType}');
+    return conn.runTx((session) async {
+      final dynamic result = await queryBlock(session);
+      if (result is T) {
+        return result;
+      }
+      throw Exception(
+          'Error running in transaction, $result (${result.runtimeType})'
+          ' is not ${T.runtimeType}');
+    });
   }
 
   Future<void> prepareDatabase() async {
@@ -362,7 +370,7 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
   }
 
   @protected
-  TX createDatabaseTransaction(PostgreSQLExecutionContext conn, TABLES tables);
+  TX createDatabaseTransaction(TxSession conn, TABLES tables);
 }
 
 //extension on SqlClientBase {
