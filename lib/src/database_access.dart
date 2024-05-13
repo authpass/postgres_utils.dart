@@ -309,13 +309,6 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
       }
     });
     _logger.fine('Last migration: $lastMigration');
-    if (lastMigration > 0 && lastMigration < 3) {
-      _logger.warning('Recreating database.');
-      await clean();
-      await run((conn) async {
-        await tables.migration.createTable(conn);
-      });
-    }
 
     final migrationRun = clock.now().toUtc();
     await run((conn) async {

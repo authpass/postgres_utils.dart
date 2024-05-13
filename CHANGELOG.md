@@ -1,4 +1,4 @@
-## 2.0.0-rc.2
+## 2.0.0-rc.3
 
 - Migrate to `postgres` v3.
 
