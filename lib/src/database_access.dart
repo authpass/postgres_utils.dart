@@ -232,12 +232,14 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
     TABLES extends TablesBase> {
   DatabaseAccessBase({
     required this.config,
+    this.connectionSettings,
     required this.tables,
     required this.migrations,
   });
 
   final TABLES tables;
   final DatabaseConfig config;
+  final ConnectionSettings? connectionSettings;
   final MigrationsProvider<TX, TABLES> migrations;
 
   Connection? _conn;
@@ -246,13 +248,15 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
     if (_conn != null) {
       return _conn!;
     }
-    final conn = await Connection.open(Endpoint(
-      host: config.host,
-      port: config.port,
-      database: config.databaseName,
-      username: config.username,
-      password: config.password,
-    ));
+    final conn = await Connection.open(
+        Endpoint(
+          host: config.host,
+          port: config.port,
+          database: config.databaseName,
+          username: config.username,
+          password: config.password,
+        ),
+        settings: connectionSettings);
     return _conn = conn;
   }
 
