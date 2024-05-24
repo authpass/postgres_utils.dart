@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:postgres/postgres.dart';
+
 // ignore: implementation_imports
 import 'package:postgres/src/types/type_registry.dart' show TypeRegistryExt;
 import 'package:postgres_utils/src/config.dart';
@@ -16,9 +17,16 @@ const whereIsNull = Object();
 const whereIsNotNull = Object();
 
 class OnConflictActionDoUpdate extends OnConflictAction {
-  OnConflictActionDoUpdate({required this.indexColumns});
+  OnConflictActionDoUpdate({
+    required this.indexColumns,
+    this.concatColumns = const {},
+  });
 
+  /// Columns which are used to identify uniqueness
   final List<String> indexColumns;
+
+  /// Columns which should not be overwritten, but concatenated.
+  final Set<String> concatColumns;
 }
 
 abstract class OnConflictAction {
@@ -56,8 +64,15 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
     if (onConflict is OnConflictActionDoUpdate) {
       final set = entries
           .where((element) => !onConflict.indexColumns.contains(element.key))
-          .map((e) => '${e.key} = EXCLUDED.${e.key}')
-          .join(', ');
+          .map((e) {
+        if (onConflict.concatColumns.contains(e.key)) {
+          return '''
+          ${e.key} = CASE WHEN $table.${e.key} IS NULL THEN EXCLUDED.${e.key} 
+          ELSE $table.${e.key} || EXCLUDED.${e.key}
+          END''';
+        }
+        return '${e.key} = EXCLUDED.${e.key}';
+      }).join(', ');
       final where = entries
           .where((element) => onConflict.indexColumns.contains(element.key))
           .map((e) => '$table.${e.key} = EXCLUDED.${e.key}')
@@ -219,6 +234,7 @@ class CustomTypeBind extends CustomBind {
       type,
     );
   }
+
   CustomTypeBind._(String bind, Object value, Type type)
       : super(bind, value, type: type);
 
