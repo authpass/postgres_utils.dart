@@ -176,7 +176,7 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
         fmtString,
         values: values,
         timeoutInSeconds: timeoutInSeconds,
-        queryMode: useExtendedQuery ? QueryMode.extended : null,
+        queryMode: useExtendedQuery ? QueryMode.extended : QueryMode.simple,
       );
       result = sqlResult.affectedRows;
       if (expectedResultCount != null && result != expectedResultCount) {
@@ -195,19 +195,23 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
   Future<Result> query(
     String fmtString, {
     Map<String, Object?>? values,
-    bool allowReuse = true,
     int? timeoutInSeconds,
     QueryMode? queryMode,
   }) async {
     assert(_assertCorrectValues(values));
+    queryMode ??= values == null || values.isEmpty
+        ? QueryMode.simple
+        : QueryMode.extended;
     try {
       // _logger.finest('QUERY: $fmtString');
-      return _conn.execute(Sql.named(fmtString),
-          parameters: values,
-          queryMode: queryMode,
-          timeout: timeoutInSeconds == null
-              ? null
-              : Duration(seconds: timeoutInSeconds));
+      return _conn.execute(
+        Sql.named(fmtString),
+        parameters: values,
+        queryMode: queryMode,
+        timeout: timeoutInSeconds == null
+            ? null
+            : Duration(seconds: timeoutInSeconds),
+      );
     } catch (e, stackTrace) {
       _logger.warning(
           'Error while running statement $fmtString', e, stackTrace);
