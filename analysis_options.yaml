@@ -1,14 +1,9 @@
-# Defines a default set of lint rules enforced for
-# projects at Google. For details and rationale,
-# see https://github.com/dart-lang/pedantic#enabled-lints.
-include: package:pedantic/analysis_options.yaml
+# Base lint set from package:lints, plus the house rules below.
+include: package:lints/recommended.yaml
 
 analyzer:
   exclude:
     - lib/**/*.g.dart
-  strong-mode:
-    implicit-casts: false
-    implicit-dynamic: false
   errors:
     # treat missing required parameters as a warning (not a hint)
     missing_required_param: warning
@@ -111,7 +106,6 @@ linter:
     # - prefer_constructors_over_static_methods # not yet tested
     - prefer_contains
     # - prefer_double_quotes # opposite of prefer_single_quotes
-    - prefer_equal_for_default_values
     # - prefer_expression_function_bodies # conflicts with https://github.com/flutter/flutter/wiki/Style-guide-for-Flutter-repo#consider-using--for-short-functions-and-methods
     - prefer_final_fields
     - prefer_final_in_for_each
