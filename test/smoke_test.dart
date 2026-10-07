@@ -1,5 +1,5 @@
 // Smoke test: runs the migration runner against stock postgres in docker,
-// inserts a row, and queries it back.
+// inserts rows (including a jsonb payload), and queries them back.
 //
 // Prerequisite: a reachable postgres. Start one with:
 //
@@ -45,10 +45,12 @@ class _SmokeAccess extends DatabaseAccessBase<_SmokeTransaction, _SmokeTables> {
 
 class _SmokeTables extends TablesBase {
   final note = _NoteTable();
+  final payload = _PayloadTable();
 
   @override
   List<TableBase> get tables => [
         note,
+        payload,
       ];
 }
 
@@ -72,6 +74,27 @@ class _NoteTable extends TableBase {
   }
 }
 
+class _PayloadTable extends TableBase {
+  static const tableName = 'smoke_payload';
+
+  @override
+  List<String> get tables => [
+        tableName,
+      ];
+
+  Future<void> createTable(_SmokeTransaction db) async {
+    await db
+        .execute('CREATE TABLE $tableName (id serial primary key, body jsonb)');
+  }
+
+  Future<void> insertPayload(
+      _SmokeTransaction db, Map<String, Object?> payload) async {
+    await db.executeInsert(tableName, {
+      'body': payload,
+    });
+  }
+}
+
 class _SmokeMigrations
     extends MigrationsProvider<_SmokeTransaction, _SmokeTables> {
   @override
@@ -80,6 +103,12 @@ class _SmokeMigrations
           id: 1,
           up: (conn) async {
             await conn.tables.note.createTable(conn);
+          },
+        ),
+        Migrations(
+          id: 2,
+          up: (conn) async {
+            await conn.tables.payload.createTable(conn);
           },
         ),
       ];
@@ -108,5 +137,24 @@ void main() {
     final rows =
         await access.run((db) => db.query('SELECT body FROM smoke_note'));
     expect(rows.single[0], body);
+  });
+
+  test('insert and query jsonb', () async {
+    final access = _SmokeAccess(config: _testConfig());
+    addTearDown(access.dispose);
+    await access.clean();
+    await access.prepareDatabase();
+    final payload = <String, Object?>{
+      'level': 'debug',
+      'count': 3,
+      'tags': ['a', 'b'],
+      'meta': {'x': true},
+    };
+    await access.run((db) async {
+      await db.tables.payload.insertPayload(db, payload);
+    });
+    final rows =
+        await access.run((db) => db.query('SELECT body FROM smoke_payload'));
+    expect(rows.single[0], payload);
   });
 }
