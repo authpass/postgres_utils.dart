@@ -2,9 +2,6 @@ import 'package:clock/clock.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:postgres/postgres.dart';
-
-// ignore: implementation_imports
-import 'package:postgres/src/types/type_registry.dart' show TypeRegistryExt;
 import 'package:postgres_utils/src/config.dart';
 import 'package:postgres_utils/src/tables/base_tables.dart';
 import 'package:postgres_utils/src/tables/migration_tables.dart';
@@ -204,7 +201,7 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
         : QueryMode.extended;
     try {
       // _logger.finest('QUERY: $fmtString');
-      return _conn.execute(
+      return await _conn.execute(
         Sql.named(fmtString),
         parameters: values,
         queryMode: queryMode,
@@ -221,31 +218,11 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
 }
 
 class CustomBind {
-  CustomBind(this._bind, this.value, {Type? type}) : _type = type;
+  CustomBind(this._bind, this.value);
   final String _bind;
   final Object value;
-  final Type? _type;
 
   String formatString(String bindName) => _bind;
-}
-
-class CustomTypeBind extends CustomBind {
-  factory CustomTypeBind(Type type, Object value) {
-    // _bindCount.to
-    return CustomTypeBind._(
-      '',
-      value,
-      type,
-    );
-  }
-
-  CustomTypeBind._(String bind, Object value, Type type)
-      : super(bind, value, type: type);
-
-  @override
-  String formatString(String bindName) => _type == null
-      ? '@$bindName'
-      : '@$bindName::${TypeRegistry().lookupTypeName(_type)}';
 }
 
 abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
