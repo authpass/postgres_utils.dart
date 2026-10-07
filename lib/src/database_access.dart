@@ -164,8 +164,8 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
     int? expectedResultCount,
 
     /// Forces the extended query protocol when true, the simple one when
-    /// false. When null (the default), the extended protocol is used if
-    /// [values] are present, like [query] does.
+    /// false. When null (the default), the extended protocol is used for
+    /// non-empty [values], like [query] does.
     bool? useExtendedQuery,
   }) async {
     try {
