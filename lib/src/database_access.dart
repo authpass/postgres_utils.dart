@@ -162,18 +162,24 @@ class DatabaseTransactionBase<TABLES extends TablesBase> {
     Map<String, Object?>? values,
     int? timeoutInSeconds,
     int? expectedResultCount,
-    bool useExtendedQuery = false,
+
+    /// Forces the extended query protocol when true, the simple one when
+    /// false. When null (the default), the extended protocol is used if
+    /// [values] are present, like [query] does.
+    bool? useExtendedQuery,
   }) async {
     try {
       assert(_assertCorrectValues(values));
       _logger.finest('Executing query: $fmtString with values: $values');
 
+      final extended =
+          useExtendedQuery ?? (values != null && values.isNotEmpty);
       final int result;
       final sqlResult = await query(
         fmtString,
         values: values,
         timeoutInSeconds: timeoutInSeconds,
-        queryMode: useExtendedQuery ? QueryMode.extended : QueryMode.simple,
+        queryMode: extended ? QueryMode.extended : QueryMode.simple,
       );
       result = sqlResult.affectedRows;
       if (expectedResultCount != null && result != expectedResultCount) {
@@ -270,7 +276,7 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
   }
 
   Future<void> dispose() async {
-    await _conn!.close();
+    await _conn?.close();
     _conn = null;
   }
 
