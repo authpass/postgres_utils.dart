@@ -1,4 +1,4 @@
-## 2.0.0
+## 2.0.0-rc.6
 
 - Require `postgres` ^3.5.0; remove the `postgres/src` implementation import.
 - Remove `CustomTypeBind`; `CustomBind` no longer takes a `type`.
