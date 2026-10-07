@@ -1,5 +1,5 @@
 // Smoke test: runs the migration runner against stock postgres in docker,
-// inserts rows (including a jsonb payload), and queries them back.
+// inserts rows (including a jsonb payload), updates one, and queries back.
 //
 // Prerequisite: a reachable postgres. Start one with:
 //
@@ -156,5 +156,26 @@ void main() {
     final rows =
         await access.run((db) => db.query('SELECT body FROM smoke_payload'));
     expect(rows.single[0], payload);
+  });
+
+  test('update with binds through executeUpdate', () async {
+    final access = _SmokeAccess(config: _testConfig());
+    addTearDown(access.dispose);
+    await access.clean();
+    await access.prepareDatabase();
+    const before = 'before';
+    const after = 'after';
+    await access.run((db) async {
+      await db.tables.note.insertNote(db, before);
+    });
+    final updated = await access.run((db) => db.executeUpdate(
+          'smoke_note',
+          set: {'body': after},
+          where: {'body': before},
+        ));
+    expect(updated, 1);
+    final rows =
+        await access.run((db) => db.query('SELECT body FROM smoke_note'));
+    expect(rows.single[0], after);
   });
 }
