@@ -305,7 +305,12 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
     final lastMigration = await run((connection) async {
       try {
         await tables.migration.createTable(connection);
-        return await tables.migration.queryLastVersion(connection);
+        final lastVersion = await tables.migration.queryLastVersion(connection);
+        if (lastVersion == 0) {
+          // Throwing rolls back the CREATE TABLE above.
+          await tables.migration.checkLegacyHistory(connection);
+        }
+        return lastVersion;
       } catch (e, stackTrace) {
         _logger.severe('Error during migration', e, stackTrace);
         rethrow;
@@ -326,26 +331,6 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
         }
       }
     });
-
-//    _database = config.database();
-//    final client = _database.sqlClient;
-//    _logger.finest('Running migration.');
-//    await client.runInTransaction((t) async {
-//      final result = await client.run(
-//        SqlSourceBuilder()
-//          ..write('CREATE TABLE IF NOT EXISTS ')
-//          ..identifier(_TABLE_MIGRATE)
-//          ..write(' (')
-//          ..identifier(_COLUMN_ID)
-//          ..write(' id PRIMARY KEY SERIAL, ')
-//          ..identifier(_TABLE_MIGRATE_APPLIED_AT)
-//          ..write(' timestamp without time zone')
-//          ..identifier(_TABLE_MIGRATE_VERSION)
-//          ..write('INT NOT NULL)'),
-//      );
-//    });
-//    final table = _database.sqlClient.table('authpass_migration');
-//    _database.collection(_TABLE_MIGRATE).document('1');
   }
 
   Future<void> clean() async {
@@ -382,7 +367,17 @@ abstract class DatabaseAccessBase<TX extends DatabaseTransactionBase<TABLES>,
 //}
 
 abstract class TablesBase {
-  final migration = MigrationTable();
+  /// [migrationTableName] names the table that records which migrations have
+  /// run. It defaults to [defaultMigrationTableName] so databases created by
+  /// earlier versions keep their history. A database whose history is in
+  /// `authpass_migration` must rename that table before switching to another
+  /// name; [DatabaseAccessBase.prepareDatabase] refuses to start otherwise.
+  TablesBase({String migrationTableName = defaultMigrationTableName})
+      : migration = MigrationTable(tableName: migrationTableName);
+
+  static const defaultMigrationTableName = MigrationTable.legacyTableName;
+
+  final MigrationTable migration;
 
   @protected
   List<TableBase> get tables;
