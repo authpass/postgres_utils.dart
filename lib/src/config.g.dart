@@ -10,14 +10,16 @@ DatabaseConfig _$DatabaseConfigFromJson(Map json) => $checkedCreate(
       'DatabaseConfig',
       json,
       ($checkedConvert) {
+        $checkKeys(
+          json,
+          requiredKeys: const ['databaseName', 'username', 'password'],
+        );
         final val = DatabaseConfig(
           host: $checkedConvert('host', (v) => v as String? ?? 'localhost'),
-          port: $checkedConvert('port', (v) => v as int? ?? 5432),
-          databaseName: $checkedConvert(
-              'databaseName', (v) => v as String? ?? 'authpass'),
-          username:
-              $checkedConvert('username', (v) => v as String? ?? 'authpass'),
-          password: $checkedConvert('password', (v) => v as String? ?? 'blubb'),
+          port: $checkedConvert('port', (v) => (v as num?)?.toInt() ?? 5432),
+          databaseName: $checkedConvert('databaseName', (v) => v as String),
+          username: $checkedConvert('username', (v) => v as String),
+          password: $checkedConvert('password', (v) => v as String?),
         );
         return val;
       },

@@ -23,8 +23,6 @@ class DatabaseConfig {
   factory DatabaseConfig.fromEnvironment({DatabaseConfig? defaults}) =>
       DatabaseConfig.fromJson(_jsonFromEnvironment(defaults));
 
-  static final defaults = DatabaseConfig.fromJson(<String, dynamic>{});
-
   Map<String, dynamic> toJson() => _$DatabaseConfigToJson(this);
 
   @JsonKey(defaultValue: 'localhost')
@@ -32,11 +30,13 @@ class DatabaseConfig {
   @JsonKey(defaultValue: 5432)
   final int port;
 
-  @JsonKey(defaultValue: 'authpass')
+  @JsonKey(required: true)
   final String databaseName;
-  @JsonKey(defaultValue: 'authpass')
+  @JsonKey(required: true)
   final String username;
-  @JsonKey(defaultValue: 'blubb')
+
+  /// Must be present in json; `null` connects without a password.
+  @JsonKey(required: true)
   final String? password;
 
   DatabaseConfig copyWith({
